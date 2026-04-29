@@ -342,60 +342,6 @@ function closeQrModal() {
   stopQrRefresh();
 }
 
-// ─── Drink QR helpers ──────────────────────────────────────────────────────
-let _drinkQrTimer = null;
-
-async function fetchDrinkQr() {
-  try {
-    const res = await fetch('/api/drink-qr');
-    const data = await res.json();
-    document.getElementById('drink-qr-img').src = data.url;
-    document.getElementById('drink-code-label').textContent = 'Code: ' + data.code;
-  } catch (err) {
-    console.error('Drink QR error:', err);
-  }
-}
-
-function triggerDrinkProgressAnimation() {
-  const bar = document.getElementById('drink-progress');
-  bar.classList.remove('animating');
-  void bar.offsetWidth;
-  bar.classList.add('animating');
-}
-
-function startDrinkQrRefresh() {
-  triggerDrinkProgressAnimation();
-  stopDrinkQrRefresh();
-  _drinkQrTimer = setInterval(async () => {
-    await fetchDrinkQr();
-    triggerDrinkProgressAnimation();
-  }, 5000);
-}
-
-function stopDrinkQrRefresh() {
-  if (_drinkQrTimer) {
-    clearInterval(_drinkQrTimer);
-    _drinkQrTimer = null;
-  }
-}
-
-async function openDrinkModal() {
-  const modal = document.getElementById('drink-modal');
-  modal.classList.add('open');
-  modal.setAttribute('aria-hidden', 'false');
-  document.body.style.overflow = 'hidden';
-  await fetchDrinkQr();
-  startDrinkQrRefresh();
-}
-
-function closeDrinkModal() {
-  const modal = document.getElementById('drink-modal');
-  modal.classList.remove('open');
-  modal.setAttribute('aria-hidden', 'true');
-  document.body.style.overflow = '';
-  stopDrinkQrRefresh();
-}
-
 // ─── Screen / UI helpers ───────────────────────────────────────────────────
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -408,7 +354,6 @@ const PAID_ARTICLES = {
   massagechair: 'Massage Chair',
 };
 
-const FREE_EXTRAS = ['Yanga Sportswater'];
 
 function showDashboard() {
   showScreen('dashboard-screen');
@@ -514,10 +459,9 @@ function renderMembership(type) {
 
 function renderExtras(articles) {
   const paid = articles.filter(slug => PAID_ARTICLES[slug]).map(slug => PAID_ARTICLES[slug]);
-  const all = [...paid, ...FREE_EXTRAS];
   const el = document.getElementById('extras-text');
   el.style.display = '';
-  el.textContent = 'Extras: ' + all.join(', ');
+  el.textContent = 'Extras: ' + paid.join(', ');
 }
 
 function showLoginMessage(msg, type = 'info') {
@@ -572,13 +516,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.target === document.getElementById('qr-modal')) closeQrModal();
   });
 
-  // ── Drink QR ──────────────────────────────────────────────────────────────
-  document.getElementById('btn-drink-qr').addEventListener('click', openDrinkModal);
-  document.getElementById('btn-close-drink').addEventListener('click', closeDrinkModal);
-  document.getElementById('drink-modal').addEventListener('click', e => {
-    if (e.target === document.getElementById('drink-modal')) closeDrinkModal();
-  });
-
   // ── Refresh dashboard data when user returns to the tab ───────────────────
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && state.accessToken && document.getElementById('dashboard-screen').classList.contains('active')) {
@@ -588,7 +525,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── Keyboard: Escape closes modal ────────────────────────────────────────
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { closeQrModal(); closeDrinkModal(); }
+    if (e.key === 'Escape') { closeQrModal(); }
   });
 
   // ── Logout ────────────────────────────────────────────────────────────────
